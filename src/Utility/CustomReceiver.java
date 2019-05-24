@@ -25,6 +25,8 @@ public class CustomReceiver implements Receiver
 	public static final int YELLOW_VEL	= 50;
 	public static final int ORANGE_VEL	= 51;
 
+	public int lastNoteVal = -1;
+
 	public static int velocityTest = 0;
 
 	public CustomReceiver(Receiver rcvr)
@@ -48,15 +50,14 @@ public class CustomReceiver implements Receiver
 	{
 		byte[] messageBytes = message.getMessage();
 
-		//TODO remove
-		if(messageBytes[1] == 50 && messageBytes[2] == NOTE_ON) {
-			try {
-				rcvr.send(new ShortMessage(ShortMessage.NOTE_ON, 51, ++velocityTest), -1);
-				System.out.println(velocityTest);
-			} catch (InvalidMidiDataException e) {
-				e.printStackTrace();
-			}
+		// This is hacky as *shit* but it should still work
+		if(messageBytes[2] == NOTE_ON) {
+			if (lastNoteVal == messageBytes[1])
+				lastNoteVal = -messageBytes[1];
+			else
+				lastNoteVal = messageBytes[1];
 		}
+
 
 		if(virtualKeyboard != null)
 			handler(messageBytes[1], messageBytes[2]);
