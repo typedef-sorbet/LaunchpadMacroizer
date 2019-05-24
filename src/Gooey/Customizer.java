@@ -24,8 +24,6 @@ public class Customizer extends JFrame
 
 	private int buttonValue;
 
-	public boolean listening;
-
 	public Customizer(CustomReceiver rcvr)
 	{
 
@@ -110,21 +108,36 @@ public class Customizer extends JFrame
 
 	public void getNewActionFromDialog()
 	{
+		// This method was an absolute CLUSTERFUCK to code so I'm commenting it now so I never forget why it's written like this.
+
+		// Create the JFrame that asks the user to press a button. Will be populated and set visible later.
 		JFrame askFrame = new JFrame("Button Mapping");
 
+		// Create a new background worker thread that listens to the MIDI coming in, and exits when:
+		//		A) A new MIDI button has been pressed
+		//		B) The cancel button has been pressed
+		// This background thread executes in the background, *AWAY FROM THE EVENT DISPATCH THREAD* so that the application can continue running while listening occurs.
 		SwingWorker<Integer, String> midiListener = new SwingWorker<Integer, String>()
 		{
+			// This is where the listening happens.
 			@Override
 			protected Integer doInBackground() throws Exception
 			{
+				// Grab the last recorded note value.
 				int noteVal = receiverToModify.lastNoteVal;
+
+				// Loop until we hear a new value or get cancelled
 				while(true)
 				{
+					// If we've gotten interrupted by midiListener.cancel() ...
 					if(Thread.currentThread().isInterrupted())
 					{
 						throw new InterruptedException("Worker interrupted while listening.");
 					}
-					//noinspection ConstantConditions
+
+					// If the current note value is still what we've recorded, sleep for 1 millisecond, then check again.
+					// Otherwise, we're got a hit; break the loop.
+					// noinspection ConstantConditions
 					if(receiverToModify.lastNoteVal == noteVal)
 					{
 						Thread.sleep(1);
@@ -135,39 +148,59 @@ public class Customizer extends JFrame
 					}
 				}
 
-				return receiverToModify.lastNoteVal;
+				// I use abs() here because receiverToModify will flip the sign of lastNoteVal if it sees a button pressed twice in a row.
+				// It does this because we want to preserve the numerical value of the note, but also numerically signal that this is a new press.
+				// This covers both cases.
+				return Math.abs(receiverToModify.lastNoteVal);
 			}
 
+			// The Event Dispatch Thread will run this method once doInBackground() is done executing.
+			// As such, we have access to all Swing objects that the EDT would normally have access to.
+			// Since we want the mapping to happen after a button is pressed, but we also want the application to continue running while we wait for said press,
+			// we make the mapping happen as a result of an "event" caused by the press.
+			// In this case, that event is midiListener.doInBackground() finishing.
 			protected void done()
 			{
-				System.out.println("Done is being executed.");
+				// Thanos snap that frame, we don't need it anymore
 				askFrame.setVisible(false);
+
+				// Default to a cancel code; this structure necessitates an initialization value
 				int code = -1;
+
+				// Try and grab the note value that midiListener grabbed.
+				// If we're unsuccessful, that means that the thread got cancelled, so don't bother trying to map.
 				try {
 					code = get();
 				} catch (InterruptedException | ExecutionException e) {
 					e.printStackTrace();
 				}
+
+				// If we were successful in getting a note value, do the mapping.
 				if(code != -1)
 					completeMapping(code);
 			}
 		};
 
+		// Here's where we populate the askFrame and start the listener.
+		// We want this to happen one statement after the other, so we shove it into an invokeLater to ensure that that happens.
+		// It also has the nice benefit of letting the EDT execute this block at its leisure.
 		SwingUtilities.invokeLater(() -> {
+			// JFrame housekeeping, this part isn't important
 			askFrame.getContentPane().setLayout(new GridLayout(2,2));
 			askFrame.getContentPane().add(new JLabel("Please press the button you would like to edit."));
 			JButton cancelButton = new JButton("Cancel");
 			askFrame.getContentPane().add(cancelButton);
 			askFrame.pack();
 
-			listening = true;
-
+			// When the cancel button is pressed, cancel the midiListener thread. This will cause it to exit with an InterruptedException, and prevent a mapping from occurring.
 			cancelButton.addActionListener(e -> {
 				midiListener.cancel(true);
 			});
 
+			// Start the listener thread,
 			midiListener.execute();
 
+			// Now that everything is in place, pop up the JFrame and prompt the user.
 			askFrame.setVisible(true);
 		});
 	}
