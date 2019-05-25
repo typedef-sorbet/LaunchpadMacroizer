@@ -20,6 +20,8 @@ public class CustomReceiver implements Receiver
 	public static final int NOTE_OFF = 0;
 	private Profile currentProfile;
 
+	public boolean enabled = true;
+
 	public static final int RED_VEL		= 3;
 	public static final int GREEN_VEL	= 48;
 	public static final int YELLOW_VEL	= 50;
@@ -33,6 +35,7 @@ public class CustomReceiver implements Receiver
 	{
 		super();
 		this.rcvr = rcvr;
+		enabled = true;
 		try{
 			this.virtualKeyboard = new Robot();
 		}
@@ -59,7 +62,7 @@ public class CustomReceiver implements Receiver
 		}
 
 
-		if(virtualKeyboard != null)
+		if(enabled && virtualKeyboard != null)
 			handler(messageBytes[1], messageBytes[2]);
 	}
 

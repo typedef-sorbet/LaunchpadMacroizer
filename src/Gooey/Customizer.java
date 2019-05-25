@@ -73,45 +73,13 @@ public class Customizer extends JFrame
 		return false;
 	}
 
-	public int waitOnNextPress()
-	{
-		Thread listenerThread = new Thread(() -> {
-			final int noteVal = receiverToModify.lastNoteVal;
-
-			while (true) {
-				//noinspection ConstantConditions
-				if (receiverToModify.lastNoteVal == noteVal) {
-					try {
-						Thread.sleep(10);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				} else {
-					break;
-				}
-			}
-
-			this.buttonValue = receiverToModify.lastNoteVal;
-		});
-
-		listenerThread.start();
-
-		try {
-			listenerThread.join();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
-		return Math.abs(this.buttonValue);
-	}
-
-
 	public void getNewActionFromDialog()
 	{
 		// This method was an absolute CLUSTERFUCK to code so I'm commenting it now so I never forget why it's written like this.
 
-		// Create the JFrame that asks the user to press a button. Will be populated and set visible later.
 		JFrame askFrame = new JFrame("Button Mapping");
+
+		receiverToModify.enabled = false;
 
 		// Create a new background worker thread that listens to the MIDI coming in, and exits when:
 		//		A) A new MIDI button has been pressed
@@ -163,6 +131,8 @@ public class Customizer extends JFrame
 			{
 				// Thanos snap that frame, we don't need it anymore
 				askFrame.setVisible(false);
+
+				receiverToModify.enabled = true;
 
 				// Default to a cancel code; this structure necessitates an initialization value
 				int code = -1;
@@ -212,6 +182,8 @@ public class Customizer extends JFrame
 		// Create the JFrame that asks the user to press a button. Will be populated and set visible later.
 		JFrame askFrame = new JFrame("Button Clearing");
 
+		receiverToModify.enabled = false;
+
 		// Create a new background worker thread that listens to the MIDI coming in, and exits when:
 		//		A) A new MIDI button has been pressed
 		//		B) The cancel button has been pressed
@@ -262,6 +234,8 @@ public class Customizer extends JFrame
 			{
 				// Thanos snap that frame, we don't need it anymore
 				askFrame.setVisible(false);
+
+				receiverToModify.enabled = true;
 
 				// Default to a cancel code; this structure necessitates an initialization value
 				int code = -1;
