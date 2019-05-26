@@ -7,6 +7,8 @@ import javax.sound.midi.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
@@ -17,13 +19,7 @@ public class Testbench
 	{
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		} catch (UnsupportedLookAndFeelException e) {
+		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
 			e.printStackTrace();
 		}
 
@@ -59,6 +55,7 @@ public class Testbench
 			System.err.println("Error: unable to find Launchpad device");
 			System.exit(1);
 		}
+		final MidiDevice launchFinal = launchpad;
 
 		CustomReceiver recv = new CustomReceiver((MidiSystem.getReceiver()));
 
@@ -69,6 +66,7 @@ public class Testbench
 			t.setReceiver(recv);
 		}
 
+
 		//launchpad is now our launchpad midi device
 
 		System.out.println(String.format("Transmitters: %d\nReceivers: %d", launchpad.getTransmitters().size(), launchpad.getReceivers().size()));
@@ -77,118 +75,65 @@ public class Testbench
 
 		Customizer cust = new Customizer(recv);
 
-		while(cust.isVisible());
+		cust.addWindowListener(new WindowListener()
+		{
+			@Override
+			public void windowOpened(WindowEvent e)
+			{
 
-//		//input loop
-//		while(console.hasNext())
-//		{
-//			String nextLine = console.nextLine();
-//
-//			if(nextLine.contains("Exit"))
-//				break;
-//
-//			if(nextLine.contains("add")) {
-//				if (nextLine.contains("command")) {
-//					addCommand(console, recv);
-//				}
-//				if (nextLine.contains("keystroke")) {
-//					addKeystroke(console, recv);
-//				}
-//			}
-//			else if(nextLine.contains("remove"))
-//			{
-//				removeAction(console, recv);
-//			}
-//		}
+			}
 
-		launchpad.close();
+			@Override
+			public void windowClosing(WindowEvent e)
+			{
 
-		System.out.println("Device closed.");
+			}
 
-		recv.close();
+			@Override
+			public void windowClosed(WindowEvent e)
+			{
+				launchFinal.close();
 
+				System.out.println("Device closed.");
+
+				recv.close();
+
+				System.exit(0);
+			}
+
+			@Override
+			public void windowIconified(WindowEvent e)
+			{
+
+			}
+
+			@Override
+			public void windowDeiconified(WindowEvent e)
+			{
+
+			}
+
+			@Override
+			public void windowActivated(WindowEvent e)
+			{
+
+			}
+
+			@Override
+			public void windowDeactivated(WindowEvent e)
+			{
+
+			}
+		});
+
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			launchFinal.close();
+
+			System.out.println("Device closed.");
+
+			recv.close();
+
+			cust.setVisible(false);
+		}));
 	}
-
-//	private static void removeAction(Scanner console, CustomReceiver recv)
-//	{
-//		System.out.println("Which button would you like to clear?");
-//		int button = console.nextInt();
-//		recv.removeAction(button);
-//	}
-
-//	private static void addCommand(Scanner console, CustomReceiver recv)
-//	{
-//		System.out.println("What command would you like to add?\n> ");
-//		String command = console.nextLine();
-//		List<String> args = Arrays.asList(command.split("\\s+"));
-//		System.out.println("To which button?\n> ");
-//		int button = console.nextInt();
-//		recv.addAction(button, () -> {
-//			try {
-//				new ProcessBuilder().command(args).inheritIO().start();
-//			}catch(IOException ioe)
-//			{
-//				ioe.printStackTrace();
-//				System.exit(1);
-//			}
-//		});
-//
-//		// update the display on the launchpad
-//		try {
-//			recv.getUnderlyingReceiver().send(new ShortMessage(ShortMessage.NOTE_ON, button, CustomReceiver.NOTE_ON), -1);
-//		} catch (InvalidMidiDataException e) {
-//			e.printStackTrace();
-//		}
-//	}
-
-//	private static void addKeystroke(Scanner console, CustomReceiver recv)
-//	{
-//		// TODO modify
-//		System.out.println("What button would you like to map this keystroke to?");
-//		int button = console.nextInt();
-//		System.out.println("Please type out the keys you would like pressed, seperated by spaces, in the order you want them pressed.");
-//		List<String> keys = Arrays.asList(console.nextLine().split("\\s+"));
-//		ArrayList<Integer> keysToPress = new ArrayList<>();
-//		for(String k : keys)
-//		{
-//			switch (k) {
-//				case "Ctrl":
-//				case "ctrl":
-//					keysToPress.add(KeyEvent.VK_CONTROL);
-//
-//				case "C":
-//				case "c":
-//					keysToPress.add(KeyEvent.VK_C);
-//			}
-//		}
-//
-//		ArrayList<Integer> keysToRelease = (ArrayList<Integer>)keysToPress.clone();
-//		keysToRelease.sort(Comparator.comparingInt(keysToPress::indexOf));
-//
-//		//TODO remove debug print
-//		System.out.println(String.format("Normal order: %s\nReverse order: %s", keysToPress.toString(), keysToRelease.toString()));
-//
-//		recv.addAction(button, () -> {
-//			Robot keyPresser = recv.getRobot();
-//
-//			for(int key : keysToPress)
-//			{
-//				keyPresser.keyPress(key);
-//			}
-//
-//			for(int key : keysToRelease)
-//			{
-//				keyPresser.keyRelease(key);
-//			}
-//		});
-//
-//		// update the display on the launchpad
-//		try {
-//			recv.send(new ShortMessage(0), -1);
-//		} catch (InvalidMidiDataException e) {
-//			e.printStackTrace();
-//		}
-//	}
-
-
 }
