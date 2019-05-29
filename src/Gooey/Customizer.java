@@ -26,12 +26,12 @@ public class Customizer extends JFrame
 
 	private int buttonValue;
 
+	// TODO add cleanup function that cancels all background threads and closes necessary variables.
+
 	public Customizer(CustomReceiver rcvr)
 	{
 
 		receiverToModify = rcvr;
-
-		// TODO give clearButton and editButton ActionListeners
 
 		editButton.addActionListener(e -> getNewActionFromDialog());
 
@@ -84,26 +84,27 @@ public class Customizer extends JFrame
 
 					String currentFocus = FindingFocus.getNameOfFocusedWindow();
 
-					if(currentFocus.equals(previousFocus))
-					{
-						Thread.sleep(100);
-					}
-					else
+					if(currentFocus != null && !currentFocus.equals(previousFocus))
 					{
 						publish(currentFocus);
 						previousFocus = currentFocus;
 					}
-
+					else
+					{
+						Thread.sleep(100);
+					}
 				}
 			}
 
-
-			protected void process(String... chunks)
+			@Override
+			protected void process(List<String> chunks)
 			{
 				for(String chunk : chunks)
 					System.out.println(chunk);
 			}
 		};
+
+		focusObserver.execute();
 	}
 
 	public void setData(Customizer data)

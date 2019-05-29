@@ -94,7 +94,7 @@ public class FindingFocus
 		X11.Window parent = parentRef.getValue();
 
 		// Why are we doing this?
-		// The name of the focused window actually resides in the *parent* of the currently focused window, which holds a proxy window that actually has focus.
+		// The name of the focused window actually resides in the *parent* of the currently focused window, which holds a proxy window that actually has the focus.
 		// We query the tree for the parent of window, and then grab the parent's name.
 
 		// Grab the name and return

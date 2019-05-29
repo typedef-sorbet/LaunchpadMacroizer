@@ -18,9 +18,9 @@ public class CustomReceiver implements Receiver
 	private Robot virtualKeyboard = null;
 	public static final int NOTE_ON = 127;
 	public static final int NOTE_OFF = 0;
-	private Profile currentProfile;
+	private Profile activeProfile;
 
-	public boolean enabled = true;
+	public boolean enabled;
 
 	public static final int RED_VEL		= 3;
 	public static final int GREEN_VEL	= 48;
@@ -28,8 +28,6 @@ public class CustomReceiver implements Receiver
 	public static final int ORANGE_VEL	= 51;
 
 	public int lastNoteVal = -1;
-
-	public static int velocityTest = 0;
 
 	public CustomReceiver(Receiver rcvr)
 	{
@@ -45,7 +43,7 @@ public class CustomReceiver implements Receiver
 			System.exit(1);
 		}
 
-		currentProfile = new Profile();
+		activeProfile = new Profile();
 	}
 
 	@Override
@@ -69,7 +67,7 @@ public class CustomReceiver implements Receiver
 	public void addCommand(int buttonCode, String action)
 	{
 		// TODO concurrent mod?
-		currentProfile.addCommand(buttonCode, action);
+		activeProfile.addCommand(buttonCode, action);
 		try {
 			rcvr.send(new ShortMessage(ShortMessage.NOTE_ON, buttonCode, RED_VEL), -1);
 		} catch (InvalidMidiDataException e) {
@@ -79,7 +77,7 @@ public class CustomReceiver implements Receiver
 
 	public void addKeystroke(int buttonCode, String keystroke)
 	{
-		currentProfile.addKeystroke(buttonCode, keystroke);
+		activeProfile.addKeystroke(buttonCode, keystroke);
 		try {
 			rcvr.send(new ShortMessage(ShortMessage.NOTE_ON, buttonCode, GREEN_VEL), -1);
 		} catch (InvalidMidiDataException e) {
@@ -89,7 +87,7 @@ public class CustomReceiver implements Receiver
 
 	public void removeAction(int buttonCode)
 	{
-		currentProfile.clearBinding(buttonCode);
+		activeProfile.clearBinding(buttonCode);
 		try {
 			rcvr.send(new ShortMessage(ShortMessage.NOTE_OFF, buttonCode, NOTE_OFF), -1);
 		} catch (InvalidMidiDataException e) {
@@ -133,7 +131,7 @@ public class CustomReceiver implements Receiver
 	{
 //		System.out.println("Thank you for using NoteHandler!\nThe note you have pressed is " + noteVal);
 		boolean on = (onOrOff == NOTE_ON);
-		Runnable command = currentProfile.getCommand(noteVal);
+		Runnable command = activeProfile.getCommand(noteVal);
 		if(on && command != null)
 			command.run();
 	}
@@ -145,17 +143,17 @@ public class CustomReceiver implements Receiver
 
 	public void saveProfile(File s)
 	{
-		currentProfile.saveProfile(s);
+		activeProfile.saveProfile(s);
 	}
 
 	public void loadProfile(File s)
 	{
-		currentProfile.loadProfile(s);
+		activeProfile.loadProfile(s);
 	}
 
 	public Profile getProfile()
 	{
-		return currentProfile;
+		return activeProfile;
 	}
 
 	public class Profile
