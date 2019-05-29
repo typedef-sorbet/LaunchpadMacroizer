@@ -15,6 +15,8 @@ import java.util.List;
 
 public class Testbench
 {
+
+	// TODO add a lastEditEvent and lastSaveEvent to pop up an "Unsaved work, are you sure?" message on window close
 	public static void main(String... args) throws MidiUnavailableException
 	{
 		try {
