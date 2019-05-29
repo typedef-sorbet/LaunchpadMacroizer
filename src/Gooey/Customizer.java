@@ -1,5 +1,6 @@
 package Gooey;
 
+import Runnables.Junk.FindingFocus;
 import Utility.CustomReceiver;
 
 import javax.swing.*;
@@ -21,6 +22,7 @@ public class Customizer extends JFrame
 	private JButton clearButton;
 	private JButton saveButton;
 	private JButton loadButton;
+	private SwingWorker<String, String> focusObserver;
 
 	private int buttonValue;
 
@@ -51,6 +53,8 @@ public class Customizer extends JFrame
 			}
 		});
 
+		setupFocusObserver();
+
 		setTitle("Launchpad Macro-izer");
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -58,6 +62,48 @@ public class Customizer extends JFrame
 		setSize(600, 100);
 		add(panel1);
 		setVisible(true);
+	}
+
+	private void setupFocusObserver()
+	{
+		focusObserver = new SwingWorker<String, String>()
+		{
+			@Override
+			protected String doInBackground() throws Exception
+			{
+				String previousFocus = FindingFocus.getNameOfFocusedWindow();
+
+				publish(previousFocus);
+
+				while(true)
+				{
+					if(Thread.currentThread().isInterrupted())
+					{
+						throw new InterruptedException("focusObserver interrupted while observing");
+					}
+
+					String currentFocus = FindingFocus.getNameOfFocusedWindow();
+
+					if(currentFocus.equals(previousFocus))
+					{
+						Thread.sleep(100);
+					}
+					else
+					{
+						publish(currentFocus);
+						previousFocus = currentFocus;
+					}
+
+				}
+			}
+
+
+			protected void process(String... chunks)
+			{
+				for(String chunk : chunks)
+					System.out.println(chunk);
+			}
+		};
 	}
 
 	public void setData(Customizer data)
