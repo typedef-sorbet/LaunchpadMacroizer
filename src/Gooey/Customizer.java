@@ -30,6 +30,9 @@ public class Customizer extends JFrame
 	private JButton loadButton;
 	private SwingWorker<String, String> focusObserver;
 
+	// appProfiles: Program Name -> Profile Object
+	// rawRegistry: Program Name -> File containing Profile info
+	private HashMap<String, String> rawRegistry;
 	private HashMap<String, Profile> appProfiles;
 
 	// TODO add cleanup function that cancels all background threads and closes necessary variables.
@@ -48,7 +51,12 @@ public class Customizer extends JFrame
 			final JFileChooser fileDialog = new JFileChooser();
 			int val = fileDialog.showSaveDialog(Customizer.this);
 			if (val == JFileChooser.APPROVE_OPTION) {
+				File file = fileDialog.getSelectedFile();
 				receiverToModify.saveProfile(fileDialog.getSelectedFile());
+
+				// if the file we just saved is in the registry, reload it
+
+				reloadRegistry(file.getPath());
 			}
 		});
 
@@ -57,6 +65,7 @@ public class Customizer extends JFrame
 			int val = fileDialog.showOpenDialog(Customizer.this);
 			if (val == JFileChooser.APPROVE_OPTION) {
 				receiverToModify.loadProfile(fileDialog.getSelectedFile());
+
 			}
 		});
 
@@ -71,9 +80,35 @@ public class Customizer extends JFrame
 		setVisible(true);
 	}
 
+	private void reloadRegistry(String fileName)
+	{
+		// appProfiles: Program Name -> Profile Object
+		// rawRegistry: Program Name -> File containing Profile info
+
+		System.out.println("Checking validity of registry over file " + fileName);
+
+		// TODO this is O(n), is there a better way to do this?
+		if(rawRegistry.containsValue(fileName))
+		{
+			// We've exported a file that the registry points to.
+			// For each mapping in appProfiles that references the Profile referenced by fileName, we must replace it.
+			Profile reload = new Profile();
+			reload.loadProfile(new File(fileName));
+
+			for(String program : rawRegistry.keySet())
+			{
+				if(rawRegistry.get(program).equals(fileName))
+				{
+					appProfiles.replace(program, reload);
+				}
+			}
+		}
+	}
+
 	private void loadRegistry()
 	{
 		appProfiles = new HashMap<>();
+		rawRegistry = new HashMap<>();
 
 		File registry = new File("registry.json");
 
@@ -107,6 +142,7 @@ public class Customizer extends JFrame
 
 					System.out.println("Adding registry binding: " + nextApp + " -> " + nextFile);
 					appProfiles.put(nextApp, profile);
+					rawRegistry.put(nextApp, nextFile);
 				}
 
 				reader.endObject();

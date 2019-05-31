@@ -154,6 +154,7 @@ public class CustomReceiver implements Receiver
 	public void loadProfile(File s)
 	{
 		workingProfile.loadProfile(s);
+		redraw();
 	}
 
 	public Profile getActiveProfile()
@@ -169,8 +170,10 @@ public class CustomReceiver implements Receiver
 
 	public void resetActiveProfile()
 	{
-		activeProfile = workingProfile;
-		redraw();
+		if(!activeProfile.equals(workingProfile)) {
+			activeProfile = workingProfile;
+			redraw();
+		}
 	}
 
 	public void redraw()
