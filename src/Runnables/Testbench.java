@@ -59,7 +59,8 @@ public class Testbench
 		}
 		final MidiDevice launchFinal = launchpad;
 
-		CustomReceiver recv = new CustomReceiver((MidiSystem.getReceiver()));
+		CustomReceiver recv = CustomReceiver.INSTANCE;
+		recv.setReciever((MidiSystem.getReceiver()));
 
 		MidiSystem.getTransmitter().setReceiver(recv);
 

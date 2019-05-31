@@ -60,7 +60,13 @@ public class FindingFocus
 				X11.Window current = current_ref.getValue();
 
 				// Call upon getName to get the name of the focused window.
-				return getName(x11, display, current);
+				String name = getName(x11, display, current);
+
+				// Close the display.
+				x11.XCloseDisplay(display);
+
+				// Return the name.
+				return name;
 			}
 			else
 				return null;

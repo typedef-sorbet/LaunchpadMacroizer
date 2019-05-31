@@ -3,6 +3,8 @@ package Utility;
 import Gooey.Customizer;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import com.sun.istack.internal.NotNull;
+import com.sun.istack.internal.Nullable;
 
 import javax.sound.midi.*;
 import javax.swing.*;
@@ -14,11 +16,14 @@ import java.util.List;
 
 public class CustomReceiver implements Receiver
 {
-	private final Receiver rcvr;
+	public static final CustomReceiver INSTANCE = new CustomReceiver();
+
+	private Receiver rcvr;
 	private Robot virtualKeyboard = null;
 	public static final int NOTE_ON = 127;
 	public static final int NOTE_OFF = 0;
-	private Profile activeProfile;
+	private Profile activeProfile;			// Profile active on Launchpad
+	private Profile workingProfile;			// Profile being edited currently (may be inactive due to current window focus)
 
 	public boolean enabled;
 
@@ -29,10 +34,9 @@ public class CustomReceiver implements Receiver
 
 	public int lastNoteVal = -1;
 
-	public CustomReceiver(Receiver rcvr)
+	public CustomReceiver()
 	{
 		super();
-		this.rcvr = rcvr;
 		enabled = true;
 		try{
 			this.virtualKeyboard = new Robot();
@@ -43,7 +47,8 @@ public class CustomReceiver implements Receiver
 			System.exit(1);
 		}
 
-		activeProfile = new Profile();
+		workingProfile = new Profile();
+		activeProfile = workingProfile;
 	}
 
 	@Override
@@ -67,7 +72,7 @@ public class CustomReceiver implements Receiver
 	public void addCommand(int buttonCode, String action)
 	{
 		// TODO concurrent mod?
-		activeProfile.addCommand(buttonCode, action);
+		workingProfile.addCommand(buttonCode, action);
 		try {
 			rcvr.send(new ShortMessage(ShortMessage.NOTE_ON, buttonCode, RED_VEL), -1);
 		} catch (InvalidMidiDataException e) {
@@ -77,7 +82,7 @@ public class CustomReceiver implements Receiver
 
 	public void addKeystroke(int buttonCode, String keystroke)
 	{
-		activeProfile.addKeystroke(buttonCode, keystroke);
+		workingProfile.addKeystroke(buttonCode, keystroke);
 		try {
 			rcvr.send(new ShortMessage(ShortMessage.NOTE_ON, buttonCode, GREEN_VEL), -1);
 		} catch (InvalidMidiDataException e) {
@@ -87,7 +92,7 @@ public class CustomReceiver implements Receiver
 
 	public void removeAction(int buttonCode)
 	{
-		activeProfile.clearBinding(buttonCode);
+		workingProfile.clearBinding(buttonCode);
 		try {
 			rcvr.send(new ShortMessage(ShortMessage.NOTE_OFF, buttonCode, NOTE_OFF), -1);
 		} catch (InvalidMidiDataException e) {
@@ -143,205 +148,66 @@ public class CustomReceiver implements Receiver
 
 	public void saveProfile(File s)
 	{
-		activeProfile.saveProfile(s);
+		workingProfile.saveProfile(s);
 	}
 
 	public void loadProfile(File s)
 	{
-		activeProfile.loadProfile(s);
+		workingProfile.loadProfile(s);
 	}
 
-	public Profile getProfile()
+	public Profile getActiveProfile()
 	{
 		return activeProfile;
 	}
 
-	public class Profile
+	public void setActiveProfile(@NotNull Profile profile)
 	{
-		public HashMap<Integer, Runnable> getBindings()
+		activeProfile = profile;
+		redraw();
+	}
+
+	public void resetActiveProfile()
+	{
+		activeProfile = workingProfile;
+		redraw();
+	}
+
+	public void redraw()
+	{
+		for(int i = 0; i < 127; i++)
 		{
-			return bindings;
-		}
-
-		public HashMap<Integer, String> getRawCommands()
-		{
-			return rawCommands;
-		}
-
-		public HashMap<Integer, String> getRawKeystrokes()
-		{
-			return rawKeystrokes;
-		}
-
-		HashMap<Integer, Runnable> bindings;
-		HashMap<Integer, String> rawCommands;
-		HashMap<Integer, String> rawKeystrokes;
-
-		public Profile()
-		{
-			bindings = new HashMap<>();
-			rawCommands = new HashMap<>();
-			rawKeystrokes = new HashMap<>();
-		}
-
-		public void addCommand(int code, String command)
-		{
-			clearBinding(code);
-
-			rawCommands.put(code, command);
-			List<String> args = Arrays.asList(command.split("\\s+"));
-			bindings.put(code, () -> {
-				try {
-					new ProcessBuilder().command(args).inheritIO().start();
-				}catch(IOException ioe)
-				{
-					ioe.printStackTrace();
-					JOptionPane.showOptionDialog(null, "Error: Unable to run this command (did you type it properly?)", "Error",
-							JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
-				}
-			});
-		}
-
-		public void addKeystroke(int code, String keys)
-		{
-			clearBinding(code);
-
-			rawKeystrokes.put(code, keys);
-			List<Integer> keyCodes = Customizer.keysToCodes(Arrays.asList(keys.split("\\s+")));
-			if(keyCodes != null)
-			{
-				bindings.put(code, () -> {
-					for(int i = 0; i < keyCodes.size(); i++)
-					{
-						virtualKeyboard.keyPress(keyCodes.get(i));
-					}
-					for(int i = keyCodes.size() - 1; i >= 0; i--)
-					{
-						virtualKeyboard.keyRelease(keyCodes.get(i));
-					}
-				});
+			try {
+				rcvr.send(new ShortMessage(ShortMessage.NOTE_OFF, i, NOTE_OFF), -1);
+			} catch (InvalidMidiDataException e) {
+				e.printStackTrace();
 			}
 		}
 
-		public void clearBinding(int code)
+		HashMap<Integer, String> commands = activeProfile.getRawCommands();
+		HashMap<Integer, String> keystrokes = activeProfile.getRawKeystrokes();
+
+		for(Integer i : commands.keySet())
 		{
-			if(rawKeystrokes.get(code) != null)
-				rawKeystrokes.remove(code);
-			else
-				rawCommands.remove(code);
-			bindings.remove(code);
-		}
-
-		public Runnable getCommand(int code)
-		{
-			return bindings.get(code);
-		}
-
-		public void loadProfile(File file)
-		{
-			for(int k : bindings.keySet())
-			{
-				try {
-					rcvr.send(new ShortMessage(ShortMessage.NOTE_OFF, k, NOTE_OFF), -1);
-				} catch (InvalidMidiDataException e) {
-					e.printStackTrace();
-				}
-			}
-
-			rawKeystrokes.clear();
-			rawCommands.clear();
-			bindings.clear();
-
-			try
-			{
-				FileReader intermediate;
-				try{
-					intermediate = new FileReader(file);
-				}catch(FileNotFoundException fnfe)
-				{
-					fnfe.printStackTrace();
-					return;
-				}
-
-				JsonReader reader = new JsonReader(intermediate);
-
-				reader.beginArray();
-
-				while(reader.hasNext())
-				{
-					reader.beginObject();
-
-					while(reader.hasNext())
-					{
-						reader.nextName();
-						int buttonCode = reader.nextInt();
-						reader.nextName();
-						String type = reader.nextString();
-						reader.nextName();
-						String data = reader.nextString();
-						System.out.println("Adding binding \"" + data + "\" to button " + buttonCode);
-
-						switch (type)
-						{
-							case "command":
-								CustomReceiver.this.addCommand(buttonCode, data);
-								break;
-
-							case "keystroke":
-								CustomReceiver.this.addKeystroke(buttonCode, data);
-						}
-					}
-
-					reader.endObject();
-				}
-
-				reader.endArray();
-
-
-			}catch(IOException ioe)
-			{
-				ioe.printStackTrace();
-				return;
+			try {
+				rcvr.send(new ShortMessage(ShortMessage.NOTE_ON, i, RED_VEL), -1);
+			} catch (InvalidMidiDataException e) {
+				e.printStackTrace();
 			}
 		}
 
-		public void saveProfile(File file)
+		for(Integer i : keystrokes.keySet())
 		{
-			try{
-				JsonWriter writer = new JsonWriter(new FileWriter(file));
-
-				/*  {
-						"noteValue": ~~~
-						"type": <command or keystroke>
-						"data": <str>
-					}
-				 */
-				writer.beginArray();
-
-				for(Integer i : rawCommands.keySet())
-				{
-					writer.beginObject();
-					writer.name("noteValue").value(i);
-					writer.name("type").value("command");
-					writer.name("data").value(rawCommands.get(i));
-					writer.endObject();
-				}
-
-				for(Integer i : rawKeystrokes.keySet())
-				{
-					writer.beginObject();
-					writer.name("noteValue").value(i);
-					writer.name("type").value("keystroke");
-					writer.name("data").value(rawKeystrokes.get(i));
-					writer.endObject();
-				}
-				writer.endArray();
-				writer.close();
-			}catch(IOException ioe)
-			{
-				ioe.printStackTrace();
-				return;
+			try {
+				rcvr.send(new ShortMessage(ShortMessage.NOTE_ON, i, GREEN_VEL), -1);
+			} catch (InvalidMidiDataException e) {
+				e.printStackTrace();
 			}
 		}
+	}
+
+	public void setReciever(Receiver receiver)
+	{
+		rcvr = receiver;
 	}
 }

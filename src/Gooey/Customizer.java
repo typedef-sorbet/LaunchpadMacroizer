@@ -2,13 +2,20 @@ package Gooey;
 
 import Runnables.Junk.FindingFocus;
 import Utility.CustomReceiver;
+import Utility.Profile;
+import com.google.gson.stream.JsonReader;
+import sun.plugin.dom.exception.InvalidStateException;
 
 import javax.swing.*;
+import javax.swing.text.DefaultEditorKit;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -16,7 +23,6 @@ public class Customizer extends JFrame
 {
 	private CustomReceiver receiverToModify;
 
-	// I'm so sorry
 	private JPanel panel1;
 	private JButton editButton;
 	private JButton clearButton;
@@ -24,12 +30,13 @@ public class Customizer extends JFrame
 	private JButton loadButton;
 	private SwingWorker<String, String> focusObserver;
 
-	private int buttonValue;
+	private HashMap<String, Profile> appProfiles;
 
 	// TODO add cleanup function that cancels all background threads and closes necessary variables.
 
 	public Customizer(CustomReceiver rcvr)
 	{
+		loadRegistry();
 
 		receiverToModify = rcvr;
 
@@ -64,6 +71,57 @@ public class Customizer extends JFrame
 		setVisible(true);
 	}
 
+	private void loadRegistry()
+	{
+		appProfiles = new HashMap<>();
+
+		File registry = new File("registry.json");
+
+		JsonReader reader = null;
+
+		try {
+			reader = new JsonReader(new FileReader(registry));
+
+		/*	General structure of registry.json:
+
+			[
+				{ "app_1": "profile_file_1" },
+				{ "app_2": "profile_file_2" },
+				...
+			]
+
+		 */
+			reader.beginArray();
+
+			while(reader.hasNext())
+			{
+				reader.beginObject();
+
+				while(reader.hasNext())
+				{
+					String nextApp = reader.nextName();
+					String nextFile = reader.nextString();
+
+					Profile profile = new Profile();
+					profile.loadProfile(new File(nextFile));
+
+					System.out.println("Adding registry binding: " + nextApp + " -> " + nextFile);
+					appProfiles.put(nextApp, profile);
+				}
+
+				reader.endObject();
+			}
+
+			reader.endArray();
+
+		}catch(IOException e) {
+			e.printStackTrace();
+			System.err.println("Unable to load registry, aborting...");
+			System.exit(1);
+		}
+
+	}
+
 	private void setupFocusObserver()
 	{
 		focusObserver = new SwingWorker<String, String>()
@@ -84,6 +142,14 @@ public class Customizer extends JFrame
 
 					String currentFocus = FindingFocus.getNameOfFocusedWindow();
 
+					if(currentFocus == null)
+					{
+						continue;
+					}
+
+					String[] tokens = currentFocus.split("- ");
+					currentFocus = tokens[tokens.length-1];
+
 					if(currentFocus != null && !currentFocus.equals(previousFocus))
 					{
 						publish(currentFocus);
@@ -99,8 +165,21 @@ public class Customizer extends JFrame
 			@Override
 			protected void process(List<String> chunks)
 			{
-				for(String chunk : chunks)
-					System.out.println(chunk);
+				String app = chunks.get(chunks.size() - 1);
+				System.out.println(app);
+				if (appProfiles.containsKey(app)) {
+					System.out.println("Swapping profiles...");
+					receiverToModify.setActiveProfile(appProfiles.get(app));
+				} else {
+					System.out.println("Resetting profile...");
+					receiverToModify.resetActiveProfile();
+				}
+			}
+
+			@Override
+			protected void done()
+			{
+				throw new InvalidStateException("Something has gone wrong, focusObserver finished unexpectedly");
 			}
 		};
 
@@ -330,7 +409,7 @@ public class Customizer extends JFrame
 		System.out.println("Button detected as " + buttonToAssign);
 
 		String[] options = {"Add Command", "Add Keystroke"};
-		CustomReceiver.Profile currentProfile = receiverToModify.getProfile();
+		Profile currentProfile = receiverToModify.getActiveProfile();
 
 		String dialogText;
 		if (currentProfile.getCommand(buttonToAssign) != null) {
