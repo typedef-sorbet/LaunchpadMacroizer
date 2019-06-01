@@ -2,6 +2,9 @@ package Runnables;
 
 import Gooey.Customizer;
 import Utility.CustomReceiver;
+import com.sun.jna.Library;
+import com.sun.jna.Native;
+import com.sun.jna.platform.unix.X11;
 
 import javax.sound.midi.*;
 import javax.swing.*;
@@ -16,9 +19,22 @@ import java.util.List;
 public class Testbench
 {
 
+	public interface LibX extends Library {
+		public static final LibX INSTANCE = Native.load("X11", LibX.class);
+
+		int XInitThreads();
+	}
+
 	// TODO add a lastEditEvent and lastSaveEvent to pop up an "Unsaved work, are you sure?" message on window close
 	public static void main(String... args) throws MidiUnavailableException
 	{
+		int status = LibX.INSTANCE.XInitThreads();
+
+		if(status == 0)
+		{
+			throw new IllegalStateException("Unable to initialize threads for X11");
+		}
+
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {

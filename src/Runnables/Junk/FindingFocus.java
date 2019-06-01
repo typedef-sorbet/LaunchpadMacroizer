@@ -1,29 +1,20 @@
 package Runnables.Junk;
 
 import Utility.X;
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-import com.sun.jna.NativeLong;
-import com.sun.jna.Platform;
-import com.sun.jna.ptr.NativeLongByReference;
-import com.sun.jna.ptr.PointerByReference;
-import com.sun.jna.platform.unix.X11;
-import com.sun.jna.ptr.IntByReference;
+
+import javax.swing.*;
 
 public class FindingFocus
 {
-	// Messing around with JNA
-
-	public interface XLib extends Library {
-		XLib INSTANCE = (XLib) Native.load("X11", XLib.class);
-
-		int XGetInputFocus(X11.Display display, X11.WindowByReference focus_return, IntByReference revert_to_return);
-	}
-
 	public static void main(String... args)
 	{
-		for(String str : getNamesOfAllWindows())
-			System.out.println(str);
+		String[] choices = getNamesOfAllWindows();
+		if(choices != null)
+		{
+			String choice = (String) JOptionPane.showInputDialog(null, "Please choose an application to assign a profile to.",
+																"Application Registry", JOptionPane.QUESTION_MESSAGE, null, choices, choices[0]);
+			System.out.println(choice);
+		}
 	}
 
 	public static String[] getNamesOfAllWindows()
@@ -38,6 +29,8 @@ public class FindingFocus
 				windowNames[i] = windows[i].getTitle();
 			}
 
+			display.close();
+
 			return windowNames;
 
 		} catch (X.X11Exception e) {
@@ -46,12 +39,16 @@ public class FindingFocus
 		}
 	}
 
+
+
 	// Turns out there's a publicly available interface for this kind of thing. Who knew?
+
 	public static String getNameOfFocusedWindow()
 	{
 		try {
 			X.Display display = new X.Display();
 			X.Window window = display.getActiveWindow();
+			display.close();
 			return window.getTitle();
 		} catch (X.X11Exception e) {
 			e.printStackTrace();

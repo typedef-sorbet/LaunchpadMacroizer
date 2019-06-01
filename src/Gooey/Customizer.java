@@ -28,6 +28,7 @@ public class Customizer extends JFrame
 	private JButton clearButton;
 	private JButton saveButton;
 	private JButton loadButton;
+	private JButton registerButton;
 	private SwingWorker<String, String> focusObserver;
 
 	// appProfiles: Program Name -> Profile Object
@@ -69,6 +70,8 @@ public class Customizer extends JFrame
 			}
 		});
 
+		registerButton.addActionListener(e -> registerApplication());
+
 		setupFocusObserver();
 
 		setTitle("Launchpad Macro-izer");
@@ -78,6 +81,39 @@ public class Customizer extends JFrame
 		setSize(600, 100);
 		add(panel1);
 		setVisible(true);
+	}
+
+	private void registerApplication()
+	{
+		String[] applications = FindingFocus.getNamesOfAllWindows();
+		if(applications == null)
+			throw new IllegalStateException("Unable to get names of windows from FindingFocus");
+
+		String choice = (String) JOptionPane.showInputDialog(null, "Please choose an application to assign a profile to.",
+				"Application Registry", JOptionPane.QUESTION_MESSAGE, null, applications, applications[0]);
+
+		final JFileChooser fileDialog = new JFileChooser();
+		int val = fileDialog.showOpenDialog(Customizer.this);
+		if (val == JFileChooser.APPROVE_OPTION) {
+			File profileFile = fileDialog.getSelectedFile();
+
+			// update appProfiles
+
+			Profile newProfile = new Profile();
+			newProfile.loadProfile(profileFile);
+			if(appProfiles.containsKey(choice))
+				appProfiles.replace(choice, newProfile);
+			else
+				appProfiles.put(choice, newProfile);
+
+			// update rawRegistry
+
+			if(rawRegistry.containsKey(choice))
+				rawRegistry.replace(choice, profileFile.getPath());
+			else
+				rawRegistry.put(choice, profileFile.getPath());
+
+		}
 	}
 
 	private void reloadRegistry(String fileName)
