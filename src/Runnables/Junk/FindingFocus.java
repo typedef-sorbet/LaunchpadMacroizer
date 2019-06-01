@@ -48,8 +48,9 @@ public class FindingFocus
 		try {
 			X.Display display = new X.Display();
 			X.Window window = display.getActiveWindow();
+			String title = window.getTitle();
 			display.close();
-			return window.getTitle();
+			return title;
 		} catch (X.X11Exception e) {
 			e.printStackTrace();
 			return null;
