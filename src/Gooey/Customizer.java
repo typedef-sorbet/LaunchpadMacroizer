@@ -4,16 +4,14 @@ import Runnables.Junk.FindingFocus;
 import Utility.CustomReceiver;
 import Utility.Profile;
 import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import sun.plugin.dom.exception.InvalidStateException;
 
 import javax.swing.*;
 import javax.swing.text.DefaultEditorKit;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,9 +24,6 @@ public class Customizer extends JFrame
 	private JPanel panel1;
 	private JButton editButton;
 	private JButton clearButton;
-	private JButton saveButton;
-	private JButton loadButton;
-	private JButton registerButton;
 	private SwingWorker<String, String> focusObserver;
 
 	// appProfiles: Program Name -> Profile Object
@@ -44,11 +39,12 @@ public class Customizer extends JFrame
 
 		receiverToModify = rcvr;
 
-		editButton.addActionListener(e -> getNewActionFromDialog());
+		// Menu bar setup
 
-		clearButton.addActionListener(e -> getClearFromDialog());
-
-		saveButton.addActionListener(e -> {
+		JMenuBar menu = new JMenuBar();
+		JMenu fileMenu = new JMenu("File");
+		JMenuItem save = new JMenuItem("Save Profile As...");
+		save.addActionListener(e -> {
 			final JFileChooser fileDialog = new JFileChooser();
 			int val = fileDialog.showSaveDialog(Customizer.this);
 			if (val == JFileChooser.APPROVE_OPTION) {
@@ -61,7 +57,8 @@ public class Customizer extends JFrame
 			}
 		});
 
-		loadButton.addActionListener(e -> {
+		JMenuItem load = new JMenuItem("Load Profile...");
+		load.addActionListener(e -> {
 			final JFileChooser fileDialog = new JFileChooser();
 			int val = fileDialog.showOpenDialog(Customizer.this);
 			if (val == JFileChooser.APPROVE_OPTION) {
@@ -70,7 +67,19 @@ public class Customizer extends JFrame
 			}
 		});
 
-		registerButton.addActionListener(e -> registerApplication());
+		JMenuItem register = new JMenuItem("Register Profile to Program...");
+		register.addActionListener(e -> registerApplication());
+
+		fileMenu.add(save);
+		fileMenu.add(load);
+		fileMenu.addSeparator();
+		fileMenu.add(register);
+		menu.add(fileMenu);
+		setJMenuBar(menu);
+
+		editButton.addActionListener(e -> getNewActionFromDialog());
+
+		clearButton.addActionListener(e -> getClearFromDialog());
 
 		setupFocusObserver();
 
@@ -92,27 +101,43 @@ public class Customizer extends JFrame
 		String choice = (String) JOptionPane.showInputDialog(null, "Please choose an application to assign a profile to.",
 				"Application Registry", JOptionPane.QUESTION_MESSAGE, null, applications, applications[0]);
 
-		final JFileChooser fileDialog = new JFileChooser();
-		int val = fileDialog.showOpenDialog(Customizer.this);
-		if (val == JFileChooser.APPROVE_OPTION) {
-			File profileFile = fileDialog.getSelectedFile();
+		String[] choiceTokens = choice.split("- ");
+		choice = choiceTokens[choiceTokens.length - 1];
 
-			// update appProfiles
+		int res = JOptionPane.YES_OPTION;
 
-			Profile newProfile = new Profile();
-			newProfile.loadProfile(profileFile);
-			if(appProfiles.containsKey(choice))
-				appProfiles.replace(choice, newProfile);
-			else
-				appProfiles.put(choice, newProfile);
+		if(appProfiles.containsKey(choice))
+		{
+			res = JOptionPane.showConfirmDialog(this,
+										"This program already has a profile associated with it. Do you want to assign a new profile to this program?",
+											"Profile Already Mapped",
+												JOptionPane.YES_NO_OPTION);
+		}
 
-			// update rawRegistry
+		if(res == JOptionPane.YES_OPTION)
+		{
+			final JFileChooser fileDialog = new JFileChooser();
+			int val = fileDialog.showOpenDialog(Customizer.this);
+			if (val == JFileChooser.APPROVE_OPTION) {
+				File profileFile = fileDialog.getSelectedFile();
 
-			if(rawRegistry.containsKey(choice))
-				rawRegistry.replace(choice, profileFile.getPath());
-			else
-				rawRegistry.put(choice, profileFile.getPath());
+				// update appProfiles
 
+				Profile newProfile = new Profile();
+				newProfile.loadProfile(profileFile);
+				if(appProfiles.containsKey(choice))
+					appProfiles.replace(choice, newProfile);
+				else
+					appProfiles.put(choice, newProfile);
+
+				// update rawRegistry
+
+				if(rawRegistry.containsKey(choice))
+					rawRegistry.replace(choice, profileFile.getPath());
+				else
+					rawRegistry.put(choice, profileFile.getPath());
+
+			}
 		}
 	}
 
@@ -756,4 +781,28 @@ public class Customizer extends JFrame
 		return keysToPress;
 	}
 
+	public void saveRegistry()
+	{
+		// At this point, we're closing, so let's save the registry we have in rawRegistry to file
+		System.out.println("Saving registry...");
+		try {
+			JsonWriter writer = new JsonWriter(new FileWriter(new File("registry.json")));
+			writer.beginArray();
+
+			for(String program : rawRegistry.keySet())
+			{
+				writer.beginObject();
+				writer.name(program).value(rawRegistry.get(program));
+				writer.endObject();
+			}
+
+			writer.endArray();
+			writer.close();
+			System.out.println("Saved registry.");
+		}catch(IOException ioe)
+		{
+			ioe.printStackTrace();
+			System.err.println("Unable to save registry.");
+		}
+	}
 }

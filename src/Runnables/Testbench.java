@@ -112,6 +112,8 @@ public class Testbench
 			@Override
 			public void windowClosed(WindowEvent e)
 			{
+				cust.saveRegistry();
+
 				launchFinal.close();
 
 				System.out.println("Device closed.");
@@ -147,6 +149,8 @@ public class Testbench
 		});
 
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			cust.saveRegistry();
+
 			launchFinal.close();
 
 			System.out.println("Device closed.");
