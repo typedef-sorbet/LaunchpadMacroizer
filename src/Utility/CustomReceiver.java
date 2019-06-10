@@ -97,13 +97,14 @@ public class CustomReceiver implements Receiver
 
 	public void addKeystroke(int buttonCode, String keystroke)
 	{
-		workingProfile.addKeystroke(buttonCode, keystroke);
-		try {
-			rcvr.send(new ShortMessage(ShortMessage.NOTE_ON, buttonCode, GREEN_VEL), -1);
-		} catch (InvalidMidiDataException e) {
-			e.printStackTrace();
+		if(workingProfile.addKeystroke(buttonCode, keystroke)) {
+			try {
+				rcvr.send(new ShortMessage(ShortMessage.NOTE_ON, buttonCode, GREEN_VEL), -1);
+			} catch (InvalidMidiDataException e) {
+				e.printStackTrace();
+			}
+			lastEditEvent = Instant.now();
 		}
-		lastEditEvent = Instant.now();
 	}
 
 	public void removeAction(int buttonCode)

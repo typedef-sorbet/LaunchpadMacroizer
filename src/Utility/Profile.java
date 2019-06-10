@@ -58,7 +58,7 @@ public class Profile
 		});
 	}
 
-	public void addKeystroke(int code, String keys)
+	public boolean addKeystroke(int code, String keys)
 	{
 		clearBinding(code);
 
@@ -76,6 +76,11 @@ public class Profile
 					CustomReceiver.INSTANCE.getRobot().keyRelease(keyCodes.get(i));
 				}
 			});
+			return true;
+		}
+		else
+		{
+			return false;
 		}
 	}
 
