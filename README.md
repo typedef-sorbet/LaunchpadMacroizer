@@ -7,7 +7,7 @@ Description
 LaunchpadMacroizer is a personal project of mine that turns an old Launchpad MIDI 
 controller that I rarely use into a powerful and customizable productivity tool. 
 
-This project is not meant for public release and adoption, rather simply as a showcase piece
+This project is not meant for public adoption, rather simply as a showcase piece
 of my work. This code is *not* portable, and was never intended to run on any machine except my own.
 Clone, run, and modify at your own risk and discretion.
 
