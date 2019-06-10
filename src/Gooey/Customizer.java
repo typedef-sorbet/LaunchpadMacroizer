@@ -44,28 +44,10 @@ public class Customizer extends JFrame
 		JMenuBar menu = new JMenuBar();
 		JMenu fileMenu = new JMenu("File");
 		JMenuItem save = new JMenuItem("Save Profile As...");
-		save.addActionListener(e -> {
-			final JFileChooser fileDialog = new JFileChooser();
-			int val = fileDialog.showSaveDialog(Customizer.this);
-			if (val == JFileChooser.APPROVE_OPTION) {
-				File file = fileDialog.getSelectedFile();
-				receiverToModify.saveProfile(fileDialog.getSelectedFile());
-
-				// if the file we just saved is in the registry, reload it
-
-				reloadRegistry(file.getPath());
-			}
-		});
+		save.addActionListener(e -> save());
 
 		JMenuItem load = new JMenuItem("Load Profile...");
-		load.addActionListener(e -> {
-			final JFileChooser fileDialog = new JFileChooser();
-			int val = fileDialog.showOpenDialog(Customizer.this);
-			if (val == JFileChooser.APPROVE_OPTION) {
-				receiverToModify.loadProfile(fileDialog.getSelectedFile());
-
-			}
-		});
+		load.addActionListener(e -> load());
 
 		JMenuItem register = new JMenuItem("Register Profile to Program...");
 		register.addActionListener(e -> registerApplication());
@@ -87,9 +69,59 @@ public class Customizer extends JFrame
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		setSize(600, 100);
+		setSize(300, 100);
 		add(panel1);
 		setVisible(true);
+	}
+
+	private void save()
+	{
+		final JFileChooser fileDialog = new JFileChooser();
+		int val = fileDialog.showSaveDialog(Customizer.this);
+		if (val == JFileChooser.APPROVE_OPTION) {
+			File file = fileDialog.getSelectedFile();
+			receiverToModify.saveProfile(fileDialog.getSelectedFile());
+
+			// if the file we just saved is in the registry, reload it
+
+			reloadRegistry(file.getPath());
+		}
+	}
+
+	private void load()
+	{
+		int res = JOptionPane.YES_OPTION;
+		if(hasUnsavedWork())
+		{
+			String[] options = {"Don't Save", "Save", "Cancel"};
+			res = JOptionPane.showOptionDialog(this,
+					"The profile you are working on has unsaved edits.\nWould you like to save?",
+					"Unsaved Work",
+					JOptionPane.YES_NO_CANCEL_OPTION,
+					JOptionPane.QUESTION_MESSAGE,
+					null,
+					options,
+					"Save"
+					);
+		}
+		if(res == JOptionPane.CANCEL_OPTION)
+			return;
+		else if(res == JOptionPane.NO_OPTION)
+		{
+			save();
+		}
+
+		final JFileChooser fileDialog = new JFileChooser();
+		int val = fileDialog.showOpenDialog(Customizer.this);
+		if (val == JFileChooser.APPROVE_OPTION) {
+			receiverToModify.loadProfile(fileDialog.getSelectedFile());
+
+		}
+	}
+
+	public boolean hasUnsavedWork()
+	{
+		return receiverToModify.hasUnsavedWork();
 	}
 
 	private void registerApplication()

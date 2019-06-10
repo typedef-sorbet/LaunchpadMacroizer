@@ -10,7 +10,9 @@ import javax.sound.midi.*;
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -25,6 +27,9 @@ public class CustomReceiver implements Receiver
 	private Profile activeProfile;			// Profile active on Launchpad
 	private Profile workingProfile;			// Profile being edited currently (may be inactive due to current window focus)
 
+	private Instant lastEditEvent;
+	private Instant lastSaveEvent;
+
 	public boolean enabled;
 
 	public static final int RED_VEL		= 3;
@@ -38,6 +43,10 @@ public class CustomReceiver implements Receiver
 	{
 		super();
 		enabled = true;
+
+		lastEditEvent = Instant.now();
+		lastSaveEvent = Instant.now();
+
 		try{
 			this.virtualKeyboard = new Robot();
 		}
@@ -69,6 +78,11 @@ public class CustomReceiver implements Receiver
 			handler(messageBytes[1], messageBytes[2]);
 	}
 
+	public boolean hasUnsavedWork()
+	{
+		return lastSaveEvent.isBefore(lastEditEvent);
+	}
+
 	public void addCommand(int buttonCode, String action)
 	{
 		// TODO concurrent mod?
@@ -78,6 +92,7 @@ public class CustomReceiver implements Receiver
 		} catch (InvalidMidiDataException e) {
 			e.printStackTrace();
 		}
+		lastEditEvent = Instant.now();
 	}
 
 	public void addKeystroke(int buttonCode, String keystroke)
@@ -88,6 +103,7 @@ public class CustomReceiver implements Receiver
 		} catch (InvalidMidiDataException e) {
 			e.printStackTrace();
 		}
+		lastEditEvent = Instant.now();
 	}
 
 	public void removeAction(int buttonCode)
@@ -98,6 +114,7 @@ public class CustomReceiver implements Receiver
 		} catch (InvalidMidiDataException e) {
 			e.printStackTrace();
 		}
+		lastEditEvent = Instant.now();
 	}
 
 	public Receiver getUnderlyingReceiver()
@@ -149,12 +166,14 @@ public class CustomReceiver implements Receiver
 	public void saveProfile(File s)
 	{
 		workingProfile.saveProfile(s);
+		lastSaveEvent = Instant.now();
 	}
 
 	public void loadProfile(File s)
 	{
 		workingProfile.loadProfile(s);
 		redraw();
+		lastSaveEvent = Instant.now();
 	}
 
 	public Profile getActiveProfile()
