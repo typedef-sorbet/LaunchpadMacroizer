@@ -10,6 +10,7 @@ import javax.sound.midi.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
@@ -24,8 +25,6 @@ public class Testbench
 
 		int XInitThreads();
 	}
-
-	// TODO add a lastEditEvent and lastSaveEvent to pop up an "Unsaved work, are you sure?" message on window close
 
 	public static void main(String... args) throws MidiUnavailableException
 	{
@@ -95,69 +94,45 @@ public class Testbench
 
 		Customizer cust = new Customizer(recv);
 
-		cust.addWindowListener(new WindowListener()
+		cust.addWindowListener(new WindowAdapter()
 		{
-			@Override
-			public void windowOpened(WindowEvent e)
-			{
-
-			}
-
 			@Override
 			public void windowClosing(WindowEvent e)
 			{
+				int res = JOptionPane.YES_OPTION;
+				if(cust.hasUnsavedWork())
+				{
+					String[] options = {"Don't Save", "Save", "Cancel"};
+					res = JOptionPane.showOptionDialog(cust,
+							"The profile you are working on has unsaved edits.\nWould you like to save?",
+							"Unsaved Work",
+							JOptionPane.YES_NO_CANCEL_OPTION,
+							JOptionPane.QUESTION_MESSAGE,
+							null,
+							options,
+							"Save"
+					);
+				}
+				if(res == JOptionPane.CANCEL_OPTION)
+					return;
+				else if(res == JOptionPane.NO_OPTION)
+				{
+					cust.save();
+				}
 
-			}
-
-			@Override
-			public void windowClosed(WindowEvent e)
-			{
-				cust.saveRegistry();
-
-				launchFinal.close();
-
-				System.out.println("Device closed.");
-
-				recv.close();
-
+				cust.dispose();
 				System.exit(0);
-			}
 
-			@Override
-			public void windowIconified(WindowEvent e)
-			{
-
-			}
-
-			@Override
-			public void windowDeiconified(WindowEvent e)
-			{
-
-			}
-
-			@Override
-			public void windowActivated(WindowEvent e)
-			{
-
-			}
-
-			@Override
-			public void windowDeactivated(WindowEvent e)
-			{
-
+//				cust.saveRegistry();
+//
+//				launchFinal.close();
+//
+//				System.out.println("Device closed.");
+//
+//				recv.close();
+//
+//				System.exit(0);
 			}
 		});
-
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			cust.saveRegistry();
-
-			launchFinal.close();
-
-			System.out.println("Device closed.");
-
-			recv.close();
-
-			cust.setVisible(false);
-		}));
 	}
 }

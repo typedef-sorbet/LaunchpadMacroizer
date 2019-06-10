@@ -67,14 +67,14 @@ public class Customizer extends JFrame
 
 		setTitle("Launchpad Macro-izer");
 
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 
 		setSize(300, 100);
 		add(panel1);
 		setVisible(true);
 	}
 
-	private void save()
+	public void save()
 	{
 		final JFileChooser fileDialog = new JFileChooser();
 		int val = fileDialog.showSaveDialog(Customizer.this);
@@ -88,7 +88,7 @@ public class Customizer extends JFrame
 		}
 	}
 
-	private void load()
+	public void load()
 	{
 		int res = JOptionPane.YES_OPTION;
 		if(hasUnsavedWork())
