@@ -2,6 +2,7 @@ package Runnables;
 
 import Gooey.Customizer;
 import Utility.CustomReceiver;
+import Utility.GlowUpReceiver;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 
@@ -80,7 +81,7 @@ public class Testbench
 		}
 		final MidiDevice launchFinal = launchpad;
 
-		CustomReceiver recv = CustomReceiver.INSTANCE;
+		GlowUpReceiver recv = new GlowUpReceiver();
 		recv.setReciever((MidiSystem.getReceiver()));
 
 		MidiSystem.getTransmitter().setReceiver(recv);
@@ -90,54 +91,18 @@ public class Testbench
 			t.setReceiver(recv);
 		}
 
-
 		//launchpad is now our launchpad midi device
 
 		System.out.println(String.format("Transmitters: %d\nReceivers: %d", launchpad.getTransmitters().size(), launchpad.getReceivers().size()));
 
 		Scanner console = new Scanner(System.in);
+		System.out.print("> ");
 
-		Customizer cust = new Customizer(recv);
-
-		cust.addWindowListener(new WindowAdapter()
+		while(console.hasNextLine())
 		{
-			@Override
-			public void windowClosing(WindowEvent e)
-			{
-				int res = JOptionPane.YES_OPTION;
-				if(cust.hasUnsavedWork())
-				{
-					String[] options = {"Don't Save", "Save", "Cancel"};
-					res = JOptionPane.showOptionDialog(cust,
-							"The profile you are working on has unsaved edits.\nWould you like to save?",
-							"Unsaved Work",
-							JOptionPane.YES_NO_CANCEL_OPTION,
-							JOptionPane.QUESTION_MESSAGE,
-							null,
-							options,
-							"Save"
-					);
-				}
-				if(res == JOptionPane.CANCEL_OPTION)
-					return;
-				else if(res == JOptionPane.NO_OPTION)
-				{
-					cust.save();
-				}
+			recv.drawNumber(Integer.parseInt(console.nextLine()));
+			System.out.print("> ");
+		}
 
-				cust.dispose();
-				System.exit(0);
-
-//				cust.saveRegistry();
-//
-//				launchFinal.close();
-//
-//				System.out.println("Device closed.");
-//
-//				recv.close();
-//
-//				System.exit(0);
-			}
-		});
 	}
 }
