@@ -1,14 +1,13 @@
 package Gooey;
 
 import Runnables.Junk.FindingFocus;
+import Runnables.Testbench;
 import Utility.CustomReceiver;
 import Utility.Profile;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import sun.plugin.dom.exception.InvalidStateException;
 
 import javax.swing.*;
-import javax.swing.text.DefaultEditorKit;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.*;
@@ -203,7 +202,7 @@ public class Customizer extends JFrame
 		appProfiles = new HashMap<>();
 		rawRegistry = new HashMap<>();
 
-		File registry = new File("registry.json");
+		File registry = new File(Testbench.PROJECT_DIR + "registry.json");
 
 		JsonReader reader = null;
 
@@ -308,7 +307,8 @@ public class Customizer extends JFrame
 			@Override
 			protected void done()
 			{
-				throw new InvalidStateException("Something has gone wrong, focusObserver finished unexpectedly");
+				System.err.println("Something has gone wrong, focusObserver finished unexpectedly");
+				System.exit(1);
 			}
 		};
 

@@ -1,20 +1,11 @@
 package Utility;
 
-import Gooey.Customizer;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import com.sun.istack.internal.NotNull;
-import com.sun.istack.internal.Nullable;
-
 import javax.sound.midi.*;
-import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.security.InvalidParameterException;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 
 public class CustomReceiver implements Receiver
 {
@@ -182,8 +173,12 @@ public class CustomReceiver implements Receiver
 		return activeProfile;
 	}
 
-	public void setActiveProfile(@NotNull Profile profile)
+	public void setActiveProfile(Profile profile)
 	{
+		if(profile == null)
+		{
+			throw new InvalidParameterException("null profile given to setActiveProfile");
+		}
 		activeProfile = profile;
 		redraw();
 	}

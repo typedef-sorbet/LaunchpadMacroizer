@@ -4,21 +4,19 @@ import Gooey.Customizer;
 import Utility.CustomReceiver;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
-import com.sun.jna.platform.unix.X11;
 
 import javax.sound.midi.*;
 import javax.swing.*;
-import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-import java.io.IOException;
+import java.io.File;
+import java.net.URISyntaxException;
 import java.util.*;
-import java.util.List;
 
 public class Testbench
 {
+	// You're right, I shouldn't hardcode this. Whoops.
+	public static final String PROJECT_DIR = "/home/sanctity/IdeaProjects/MIDIFuckery/";
 
 	public interface LibX extends Library {
 		public static final LibX INSTANCE = Native.load("X11", LibX.class);
@@ -29,6 +27,13 @@ public class Testbench
 	public static void main(String... args) throws MidiUnavailableException
 	{
 		int status = LibX.INSTANCE.XInitThreads();
+
+		try {
+			File f = new File(Customizer.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+			System.out.println(f.getPath());
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
 
 		if(status == 0)
 		{
