@@ -97,11 +97,20 @@ public class Testbench
 
 		Scanner console = new Scanner(System.in);
 		System.out.print("> ");
+		ArrayList<Integer> seqAsList = new ArrayList<>();
+
+		recv.drawMusicBanks();
 
 		while(console.hasNextLine())
 		{
-			recv.drawNumber(Integer.parseInt(console.nextLine()));
+			String numStr = console.nextLine();
+			for(Character c : numStr.toCharArray())
+			{
+				seqAsList.add(Integer.parseInt(c.toString()));
+			}
+			recv.drawNumberSequence(seqAsList);
 			System.out.print("> ");
+			seqAsList.clear();
 		}
 
 	}
