@@ -1,7 +1,11 @@
 package Utility;
 
+import javafx.scene.effect.Glow;
+
 import javax.sound.midi.*;
 import java.util.*;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class GlowUpReceiver implements Receiver
 {
@@ -21,6 +25,7 @@ public class GlowUpReceiver implements Receiver
 
 	private HashSet[] buttonBanks;
 	private ArrayList<Integer> correctCode;
+	private final ArrayList<Integer> lockCode;
 	private int codeIndex;
 
 	private int state;
@@ -37,9 +42,8 @@ public class GlowUpReceiver implements Receiver
 		this.state = MUSIC_STATE;
 
 		// population
-		// TODO uncomment
-//		this.correctCode = new ArrayList<>(Arrays.asList(0, 1, 0, 4, 0, 4, 0, 1));
-		this.correctCode = new ArrayList<>(Arrays.asList(1, 1, 1, 1));
+		this.correctCode = new ArrayList<>(Arrays.asList(0, 1, 0, 4, 0, 4, 0, 1));
+		this.lockCode = new ArrayList<>(Arrays.asList(7, 4, 9, 1, 8));
 		this.codeIndex = 0;
 
 		this.numberToButtons[0] = new ArrayList<Integer>(Arrays.asList(2, 3, 4, 5, 18, 21, 34, 37, 50, 53, 66, 69, 82, 85, 98, 99, 100, 101));
@@ -98,7 +102,7 @@ public class GlowUpReceiver implements Receiver
 						if(codeIndex == correctCode.size())
 						{
 							// show code here
-							drawNumberSequence(this.correctCode);
+							drawNumberSequence(this.lockCode);
 
 							this.codeIndex = 0;
 						}
@@ -183,22 +187,22 @@ public class GlowUpReceiver implements Receiver
 
 	public void drawNumberSequence(ArrayList<Integer> digits)
 	{
+		GlowUpReceiver inst = this;
+
 		this.clear();
 
 		this.state = CODE_STATE;
 
-		for(Integer d : digits)
-		{
-			this.drawNumber(d);
+		ScheduledThreadPoolExecutor stpe = new ScheduledThreadPoolExecutor(1);
 
-			try {
-				Thread.sleep(1500);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+		for(int multiplier = 0; multiplier < digits.size(); ++multiplier)
+		{
+			final int timeDelay = 1500 * multiplier;
+
+			stpe.schedule(() -> inst.drawNumber(digits.get(timeDelay / 1500)), timeDelay, TimeUnit.MILLISECONDS);
 		}
 
-		this.drawMusicBanks();
+		stpe.schedule(inst::drawMusicBanks, (digits.size() + 1) * 1500, TimeUnit.MILLISECONDS);
 	}
 
 	public void drawMusicBanks()
