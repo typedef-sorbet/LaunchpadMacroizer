@@ -131,10 +131,13 @@ public class GlowUpReceiver implements Receiver
 					}
 					else
 					{
-						codeIndex = 0;
+						codeIndex = (buttonBankPressed != 5 && buttonBankPressed == correctCode.get(0) ? 1 : 0);
 					}
 				}
 			}
+
+
+			System.out.println("New code index: " + codeIndex);
 		}
 		else
 		{
