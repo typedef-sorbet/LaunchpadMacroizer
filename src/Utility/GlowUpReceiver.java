@@ -1,8 +1,11 @@
 package Utility;
 
-import javafx.scene.effect.Glow;
-
 import javax.sound.midi.*;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -29,9 +32,12 @@ public class GlowUpReceiver implements Receiver
 	private int codeIndex;
 
 	private int state;
+//	private ArrayList<Clip> audio_clips;
 
 	public static final int MUSIC_STATE = 1;
 	public static final int CODE_STATE = 2;
+	public static final int FINALE_NUM = 5;
+	public static final String[] FILENAMES = {"0.wav", "1.wav", "incorrect-1.wav", "incorrect-2.wav", "2.wav", "finale.wav"};
 
 
 	public GlowUpReceiver()
@@ -43,7 +49,7 @@ public class GlowUpReceiver implements Receiver
 
 		// population
 		this.correctCode = new ArrayList<>(Arrays.asList(0, 1, 0, 4, 0, 4, 0, 1));
-		this.lockCode = new ArrayList<>(Arrays.asList(7, 4, 9, 1, 8));
+		this.lockCode = new ArrayList<>(Arrays.asList(1, 6, 4, 3, 6));
 		this.codeIndex = 0;
 
 		this.numberToButtons[0] = new ArrayList<Integer>(Arrays.asList(2, 3, 4, 5, 18, 21, 34, 37, 50, 53, 66, 69, 82, 85, 98, 99, 100, 101));
@@ -62,6 +68,19 @@ public class GlowUpReceiver implements Receiver
 		this.buttonBanks[2] = new HashSet<Integer>(Arrays.asList(51, 52, 67, 68));
 		this.buttonBanks[3] = new HashSet<Integer>(Arrays.asList(96, 97, 112, 113));
 		this.buttonBanks[4] = new HashSet<Integer>(Arrays.asList(102, 103, 118, 119));
+
+//		this.audio_clips = new ArrayList<>();
+//		for (int i = 0; i < FILENAMES.length; i++)
+//		{
+//			try {
+//				Clip clip = null;
+//				clip = AudioSystem.getClip();
+//				clip.open(AudioSystem.getAudioInputStream(new File("rsc/notes/" + FILENAMES[i])));
+//				this.audio_clips.add(clip);
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//		}
 	}
 
 	@Override
@@ -94,6 +113,7 @@ public class GlowUpReceiver implements Receiver
 				{
 					System.out.println("You pressed bank " + buttonBankPressed);
 					// TODO play the corresponding sound
+					playSound(buttonBankPressed);
 
 					// is it the correct next one?
 					if (buttonBankPressed == correctCode.get(codeIndex))
@@ -101,6 +121,8 @@ public class GlowUpReceiver implements Receiver
 						++codeIndex;
 						if(codeIndex == correctCode.size())
 						{
+							playSound(FINALE_NUM);
+
 							// show code here
 							drawNumberSequence(this.lockCode);
 
@@ -159,6 +181,15 @@ public class GlowUpReceiver implements Receiver
 		}
 	}
 
+	private void playSound(int sound_num)
+	{
+		try {
+			Process play_sound = new ProcessBuilder().command("cvlc", "rsc/notes/" + FILENAMES[sound_num], "--play-and-exit").inheritIO().start();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public void drawNumber(int number)
 	{
 		if(this.rcvr == null || number > 9 || number < 0)
@@ -199,10 +230,10 @@ public class GlowUpReceiver implements Receiver
 		{
 			final int timeDelay = 1500 * multiplier;
 
-			stpe.schedule(() -> inst.drawNumber(digits.get(timeDelay / 1500)), timeDelay, TimeUnit.MILLISECONDS);
+			stpe.schedule(() -> inst.drawNumber(digits.get(timeDelay / 950)), timeDelay, TimeUnit.MILLISECONDS);
 		}
 
-		stpe.schedule(inst::drawMusicBanks, (digits.size() + 1) * 1500, TimeUnit.MILLISECONDS);
+		stpe.schedule(inst::drawMusicBanks, (digits.size() + 1) * 950, TimeUnit.MILLISECONDS);
 	}
 
 	public void drawMusicBanks()
